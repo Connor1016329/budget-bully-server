@@ -165,19 +165,3 @@ export const users = pgTable('users', {
     .defaultNow()
     .notNull(),
 });
-
-// Export types for insertion and selection
-export type InsertUser = typeof users.$inferInsert;
-export type SelectUser = typeof users.$inferSelect;
-
-export type InsertAccount = typeof accounts.$inferInsert;
-export type SelectAccount = typeof accounts.$inferSelect;
-
-export type InsertTransaction = typeof transactions.$inferInsert;
-export type SelectTransaction = typeof transactions.$inferSelect;
-
-export type InsertCategory = typeof categories.$inferInsert;
-export type SelectCategory = typeof categories.$inferSelect;
-
-export type InsertAlert = typeof alerts.$inferInsert;
-export type SelectAlert = typeof alerts.$inferSelect;

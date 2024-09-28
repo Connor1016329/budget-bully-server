@@ -27,17 +27,21 @@ export class DatabaseService {
     await this.databaseClient.insert(users).values(data);
   }
 
+  async deleteUser(id: SelectUser['id']) {
+    await this.databaseClient.delete(users).where(eq(users.id, id));
+  }
+
   async getUsers() {
     return await this.databaseClient.select().from(users);
   }
 
   async getUserIdByLinkToken(
-    LinkToken: SelectUser['link_token_id'],
+    LinkToken: SelectUser['linkTokenId'],
   ): Promise<string | null> {
     const result = await this.databaseClient
       .select({ id: users.id })
       .from(users)
-      .where(eq(users.link_token_id, LinkToken))
+      .where(eq(users.linkTokenId, LinkToken))
       .limit(1);
     if (result.length > 0) {
       return result[0].id; // Return the first record

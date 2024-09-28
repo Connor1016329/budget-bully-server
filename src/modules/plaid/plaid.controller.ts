@@ -1,20 +1,31 @@
-import { Controller, Body, Post, Get } from '@nestjs/common';
+import { Controller, Post, Req, UnauthorizedException } from '@nestjs/common';
 import { PlaidService } from './plaid.service';
+import { clerkClient } from '@clerk/clerk-sdk-node';
 
 @Controller('plaid')
 export class PlaidController {
   constructor(private readonly plaidService: PlaidService) {}
 
   @Post()
-  CreateLinkToken(@Body() body: any) {
-    const { client_user_id, redirect_uri } = body;
-    console.log('userId', client_user_id);
-    console.log('completion_redirect_uri', redirect_uri);
-    return this.plaidService.createLinkToken(client_user_id, redirect_uri);
-  }
+  async createLinkToken(@Req() request: Request) {
+    const token = request.headers['authorization']?.replace('Bearer ', '');
+    if (!token) {
+      throw new UnauthorizedException('Token not found. User must sign in.');
+    }
+    try {
+      const verifiedToken = await clerkClient.verifyToken(token);
+      console.log('verifiedToken: ', verifiedToken);
 
-  @Get()
-  getusers() {
-    return this.plaidService.getusers();
+      // Use the verified token to get the user ID
+      const userId = verifiedToken.sub;
+
+      // Use the PlaidService to create the link token
+      const linkToken = await this.plaidService.createLinkToken(userId);
+
+      return { linkToken };
+    } catch (error) {
+      console.error('Error verifying token: ', error);
+      throw new UnauthorizedException('Token not verified.');
+    }
   }
 }

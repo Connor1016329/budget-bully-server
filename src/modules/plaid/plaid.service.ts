@@ -24,7 +24,6 @@ export class PlaidService {
    */
   async createLinkToken(
     userId: string,
-    completion_redirect_uri: string,
   ): Promise<LinkTokenCreateResponse | null> {
     try {
       const linkTokenConfig: LinkTokenCreateRequest = {
@@ -38,7 +37,7 @@ export class PlaidService {
         },
         products: [Products.Transactions],
         hosted_link: {
-          completion_redirect_uri: completion_redirect_uri,
+          completion_redirect_uri: 'https://budget-bully.com',
           is_mobile_app: true,
           url_lifetime_seconds: 900,
         },
@@ -48,7 +47,7 @@ export class PlaidService {
 
       // Save the link token to the database
       await this.databaseService.updateUser(userId, {
-        link_token_id: tokenResponse.data.link_token,
+        linkTokenId: tokenResponse.data.link_token,
       });
 
       return tokenResponse.data;
@@ -59,7 +58,7 @@ export class PlaidService {
   }
 
   /**
-   * Exchanges a public token for an access token.
+   * Exchanges a public token for an access token and adds the users accounts and transactions to the database.
    * @param link_token - The link token.
    * @param public_token - The public token.
    */
@@ -74,7 +73,7 @@ export class PlaidService {
 
       // Save the access token to the database
       await this.databaseService.updateUser(userId, {
-        access_token: tokenResponse.data.access_token,
+        accessToken: tokenResponse.data.access_token,
       });
 
       const transactionsResponse = await this.plaidClient.transactionsSync({

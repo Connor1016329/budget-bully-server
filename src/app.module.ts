@@ -8,7 +8,6 @@ import { DatabaseService } from './modules/database/database.service';
 import { PlaidService } from './modules/plaid/plaid.service';
 import { SyncService } from './modules/sync/sync.service';
 import { ClerkController } from './modules/auth/webhook.controller';
-import { AuthController } from './modules/auth/auth.controller';
 import { PlaidController } from './modules/plaid/plaid.controller';
 import { PlaidWebhookController } from './modules/plaid/webhook.controller';
 import { SyncController } from './modules/sync/sync.controller';
@@ -17,7 +16,6 @@ import { ClerkService } from './modules/auth/clerk.service';
 @Module({
   controllers: [
     ClerkController,
-    AuthController,
     PlaidController,
     PlaidWebhookController,
     SyncController,

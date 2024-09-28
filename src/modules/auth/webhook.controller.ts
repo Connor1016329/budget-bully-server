@@ -92,6 +92,59 @@ export class ClerkController {
       }
     }
 
+    if (evt.type === 'user.updated') {
+      const userData = evt.data;
+
+      // Prepare data for the ClerkService
+      const userPayload = {
+        id: userData.id,
+        email: userData.email_addresses[0]?.email_address, // Assuming primary email is the first
+        firstName: userData.first_name,
+        lastName: userData.last_name,
+      };
+      console.log('User payload:', userPayload);
+
+      try {
+        // Call createUser from ClerkService
+        await this.clerkService.updateUser(userPayload);
+        console.log('User updated');
+        // Return success response
+        return res.status(200).json({
+          success: true,
+          message: 'User updated successfully',
+          user: userPayload.id,
+        });
+      } catch (err) {
+        console.error('Error updating user:', err.message);
+        return res.status(400).json({
+          success: false,
+          message: err.message,
+        });
+      }
+    }
+
+    if (evt.type === 'user.deleted') {
+      const userData = evt.data;
+
+      try {
+        // Call createUser from ClerkService
+        await this.clerkService.deleteUser(userData.id);
+        console.log('User deleted');
+        // Return success response
+        return res.status(200).json({
+          success: true,
+          message: 'User updated successfully',
+          user: userData.id,
+        });
+      } catch (err) {
+        console.error('Error updating user:', err.message);
+        return res.status(400).json({
+          success: false,
+          message: err.message,
+        });
+      }
+    }
+
     return res.status(200).json({
       success: true,
       message: 'Webhook received',
