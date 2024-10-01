@@ -8,6 +8,7 @@ export class PlaidController {
 
   @Get()
   async createLinkToken(@Req() request: Request) {
+    console.log('Request headers: ', request.headers);
     const token = request.headers['authorization']?.replace('Bearer ', '');
     if (!token) {
       throw new UnauthorizedException('Token not found. User must sign in.');
