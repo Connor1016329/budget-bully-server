@@ -1,4 +1,4 @@
-import { Controller, Post, Req, UnauthorizedException } from '@nestjs/common';
+import { Controller, Get, Req, UnauthorizedException } from '@nestjs/common';
 import { PlaidService } from './plaid.service';
 import { clerkClient } from '@clerk/clerk-sdk-node';
 
@@ -6,7 +6,7 @@ import { clerkClient } from '@clerk/clerk-sdk-node';
 export class PlaidController {
   constructor(private readonly plaidService: PlaidService) {}
 
-  @Post()
+  @Get()
   async createLinkToken(@Req() request: Request) {
     const token = request.headers['authorization']?.replace('Bearer ', '');
     if (!token) {
