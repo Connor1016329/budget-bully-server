@@ -30,10 +30,10 @@ export class PlaidService {
         client_name: 'Budget Bully',
         country_codes: [CountryCode.Us],
         redirect_uri: 'https://budget-bully.com',
-        webhook: 'https://mallard-possible-horse.ngrok-free.app/plaid/webhook',
+        webhook: 'https://api.budget-bully.com/plaid/webhook',
         language: 'en',
         user: {
-          client_user_id: 'userId',
+          client_user_id: userId,
         },
         products: [Products.Transactions],
         hosted_link: {

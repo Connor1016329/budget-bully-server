@@ -57,6 +57,8 @@ export class PlaidWebhookController {
     const webhookType = webhookPayload.webhook_type;
     const webhookCode = webhookPayload.webhook_code;
 
+    console.log('valid webhook received. Type: ', webhookType);
+
     // TODO: more webhook handling
     if (webhookType === 'LINK' && webhookCode === 'SESSION_FINISHED') {
       if (webhookPayload.status === 'success') {
