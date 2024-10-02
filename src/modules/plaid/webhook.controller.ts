@@ -160,8 +160,8 @@ export class PlaidWebhookController {
     try {
       const keyLike = await JWT.importJWK(key);
       const verifyOptions: JWTVerifyOptions = {
-        maxTokenAge: '5 min',
-        clockTolerance: '5 min', // Add clock tolerance
+        maxTokenAge: '10 sec',
+        clockTolerance: '10 sec', // Add clock tolerance
       };
       await JWT.jwtVerify(signedJwt, keyLike, verifyOptions);
     } catch (error) {

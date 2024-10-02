@@ -50,6 +50,18 @@ export class DatabaseService {
     }
   }
 
+  async getAccessTokenByUserId(userId: string) {
+    const result = await this.databaseClient
+      .select({ accessToken: users.accessToken })
+      .from(users)
+      .where(eq(users.id, userId));
+    if (result.length === 1) {
+      return result[0].accessToken;
+    } else {
+      return null;
+    }
+  }
+
   async createAccount(data: InsertAccount) {
     await this.databaseClient.insert(accounts).values(data);
   }

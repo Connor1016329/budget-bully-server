@@ -26,6 +26,9 @@ export class PlaidService {
     userId: string,
   ): Promise<LinkTokenCreateResponse | null> {
     try {
+      const accessToken: string | null =
+        await this.databaseService.getAccessTokenByUserId(userId);
+
       const linkTokenConfig: LinkTokenCreateRequest = {
         client_name: 'Budget Bully',
         country_codes: [CountryCode.Us],
@@ -42,6 +45,11 @@ export class PlaidService {
           url_lifetime_seconds: 900,
         },
       };
+
+      if (accessToken && accessToken.trim() !== '') {
+        linkTokenConfig.access_token = accessToken;
+      }
+
       const tokenResponse =
         await this.plaidClient.linkTokenCreate(linkTokenConfig);
 
