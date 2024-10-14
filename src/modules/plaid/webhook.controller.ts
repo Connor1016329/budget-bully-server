@@ -53,52 +53,42 @@ export class PlaidWebhookController {
       });
     }
 
-    const webhookPayload = JSON.parse(request.rawBody.toString());
-    const webhookType = webhookPayload.webhook_type;
-    const webhookCode = webhookPayload.webhook_code;
+    const payload = JSON.parse(request.rawBody.toString());
+    const type = payload.webhook_type;
+    const code = payload.webhook_code;
 
-    console.log('valid webhook received. Type: ', webhookType);
+    console.log('Plaid Webhook received - Type: ', type, '  Code: ', code);
 
-    // TODO: more webhook handling
-    if (webhookType === 'LINK' && webhookCode === 'SESSION_FINISHED') {
-      if (webhookPayload.status === 'success') {
-        try {
-          console.log('Webhook payload:', webhookPayload);
-          await this.plaidService.exchangePublicToken(
-            webhookPayload.link_token,
-            webhookPayload.public_tokens[0],
-          );
-          return res.status(200).json({
-            success: true,
-            message: 'Public token exchanged successfully',
-          });
-        } catch (err) {
-          console.error('Error exchanging public token:', err.message);
-          return res.status(400).json({
-            success: false,
-            message: err.message,
-          });
+    switch (type) {
+      case 'LINK':
+        if (code === 'SESSION_FINISHED' && payload.status === 'success') {
+          try {
+            await this.plaidService.exchangePublicToken(
+              payload.link_token,
+              payload.public_tokens[0],
+            );
+          } catch (error) {
+            console.error('Error exchanging public token:', error);
+          }
         }
-      }
-    }
-    if (webhookType === 'TRANSACTIONS' && webhookCode === 'DEFAULT_UPDATE') {
-      try {
-        console.log('Webhook payload:', webhookPayload);
-        //await this.plaidService.handleTransactionUpdate(webhookPayload);
-        return res.status(200).json({
-          success: true,
-          message: 'Transaction update processed successfully',
-        });
-      } catch (err) {
-        console.error('Error processing transaction update:', err.message);
-        return res.status(400).json({
-          success: false,
-          message: err.message,
-        });
-      }
+
+        break;
+
+      case 'TRANSACTIONS':
+        if (code === 'SYNC_UPDATES_AVAILABLE') {
+          console.log('Sync updates available for item', payload.item_id);
+          try {
+            await this.plaidService.updateTransactions(payload.item_id);
+          } catch (error) {
+            console.error('Error updating transactions:', error);
+          }
+        }
+
+      default:
+        console.log('Unhandled Webhook');
+        break;
     }
 
-    // Default response for unhandled webhook types
     return res.status(200).json({
       success: true,
       message: 'Webhook received',
