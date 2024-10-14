@@ -9,7 +9,7 @@ import {
   transactions,
   users,
 } from './schema';
-import { eq, notInArray } from 'drizzle-orm';
+import { and, eq, notInArray } from 'drizzle-orm';
 import { sql } from 'drizzle-orm/sql';
 
 @Injectable()
@@ -102,11 +102,14 @@ export class DatabaseService {
         },
       });
 
-    // if there is an account that doesnt exist
+    // if there is an account that exists in the database but not in the data (and the userID matches), delete it
     await this.databaseClient.delete(accounts).where(
-      notInArray(
-        accounts.id,
-        data.map((account) => account.id),
+      and(
+        notInArray(
+          accounts.id,
+          data.map((account) => account.id),
+        ),
+        eq(accounts.userId, data[0].userId),
       ),
     );
   }
