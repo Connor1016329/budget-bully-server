@@ -4,11 +4,13 @@ import {
   InsertAccount,
   InsertTransaction,
   InsertUser,
+  SelectTransaction,
   SelectUser,
   transactions,
   users,
 } from './schema';
-import { eq } from 'drizzle-orm';
+import { eq, notInArray } from 'drizzle-orm';
+import { sql } from 'drizzle-orm/sql';
 
 @Injectable()
 export class DatabaseService {
@@ -18,9 +20,12 @@ export class DatabaseService {
   async updateUser(
     id: SelectUser['id'],
     data: Partial<Omit<SelectUser, 'id'>>,
-  ) {
-    console.log('updating user: ', id, ' with data: ', data);
-    await this.databaseClient.update(users).set(data).where(eq(users.id, id));
+  ): Promise<SelectUser> {
+    const result = await this.databaseClient
+      .update(users)
+      .set(data)
+      .where(eq(users.id, id));
+    return result[0];
   }
 
   async createUser(data: InsertUser) {
@@ -50,6 +55,19 @@ export class DatabaseService {
     }
   }
 
+  async getUserIdByAccessToken(accessToken: string) {
+    const result = await this.databaseClient
+      .select({ id: users.id })
+      .from(users)
+      .where(eq(users.accessToken, accessToken))
+      .limit(1);
+    if (result.length > 0) {
+      return result[0].id; // Return the first record
+    } else {
+      return null; // No matching record found
+    }
+  }
+
   async getAccessTokenByUserId(userId: string) {
     const result = await this.databaseClient
       .select({ accessToken: users.accessToken })
@@ -62,12 +80,55 @@ export class DatabaseService {
     }
   }
 
-  async createAccount(data: InsertAccount) {
-    await this.databaseClient.insert(accounts).values(data);
+  async retrieveItemByPlaidItemId(itemId: string): Promise<SelectUser> {
+    const result = await this.databaseClient
+      .select()
+      .from(users)
+      .where(eq(users.itemId, itemId));
+    return result[0];
+  }
+
+  async updateCreateOrDeleteAccounts(data: InsertAccount[]) {
+    // insert or update accounts
+    await this.databaseClient
+      .insert(accounts)
+      .values(data)
+      .onConflictDoUpdate({
+        target: [accounts.id],
+        set: {
+          name: sql`excluded.name`,
+          balance: sql`excluded.balance`,
+          updated_at: new Date(),
+        },
+      });
+
+    // if there is an account that doesnt exist
+    await this.databaseClient.delete(accounts).where(
+      notInArray(
+        accounts.id,
+        data.map((account) => account.id),
+      ),
+    );
   }
 
   async createTransaction(data: InsertTransaction) {
     await this.databaseClient.insert(transactions).values(data);
+  }
+
+  async updateOrCreateTransaction(data: Partial<SelectTransaction>) {
+    await this.databaseClient
+      .insert(transactions)
+      .values(data)
+      .onConflictDoUpdate({
+        target: [transactions.id],
+        set: data,
+      });
+  }
+
+  async deleteTransaction(id: string) {
+    await this.databaseClient
+      .delete(transactions)
+      .where(eq(transactions.id, id));
   }
 
   async getTransactionsByUserId(userId: string) {

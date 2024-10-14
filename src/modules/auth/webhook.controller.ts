@@ -71,12 +71,10 @@ export class ClerkController {
         firstName: userData.first_name,
         lastName: userData.last_name,
       };
-      console.log('User payload:', userPayload);
 
       try {
         // Call createUser from ClerkService
         const newUser = await this.clerkService.createUser(userPayload);
-        console.log('User created:', newUser);
         // Return success response
         return res.status(200).json({
           success: true,
@@ -102,7 +100,6 @@ export class ClerkController {
         firstName: userData.first_name,
         lastName: userData.last_name,
       };
-      console.log('User payload:', userPayload);
 
       try {
         // Call createUser from ClerkService

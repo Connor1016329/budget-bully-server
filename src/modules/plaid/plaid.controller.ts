@@ -8,14 +8,12 @@ export class PlaidController {
 
   @Get()
   async createLinkToken(@Req() request: Request) {
-    console.log('Request headers: ', request.headers);
     const token = request.headers['authorization']?.replace('Bearer ', '');
     if (!token) {
       throw new UnauthorizedException('Token not found. User must sign in.');
     }
     try {
       const verifiedToken = await clerkClient.verifyToken(token);
-      console.log('verifiedToken: ', verifiedToken);
 
       // Use the verified token to get the user ID
       const userId = verifiedToken.sub;
