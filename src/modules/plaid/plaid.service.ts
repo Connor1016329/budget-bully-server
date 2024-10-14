@@ -170,6 +170,7 @@ export class PlaidService {
     const response = await this.plaidClient.accountsGet({
       access_token: accessToken,
     } as AccountsGetRequest);
+
     const accounts = response.data.accounts.map((account: AccountBase) => ({
       id: account.account_id,
       userId: userId,
