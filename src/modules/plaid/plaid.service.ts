@@ -209,6 +209,17 @@ export class PlaidService {
     });
   }
 
+  async deleteUser(id: string) {
+    const accessToken = await this.databaseService.getAccessTokenByUserId(id);
+    if (accessToken) {
+      console.log('plaid removing item');
+      const response = await this.plaidClient.itemRemove({
+        access_token: accessToken,
+      });
+      console.log(response.data);
+    }
+  }
+
   /**
    * Gets all users.
    * @returns A promise that resolves to an array of users or null if an error occurs.
