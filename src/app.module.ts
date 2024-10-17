@@ -9,10 +9,17 @@ import { ClerkController } from './modules/auth/webhook.controller';
 import { PlaidController } from './modules/plaid/plaid.controller';
 import { PlaidWebhookController } from './modules/plaid/webhook.controller';
 import { ClerkService } from './modules/auth/clerk.service';
-
+import { ExpoModule } from './modules/expo/expo.module';
+import { ExpoService } from './modules/expo/expo.service';
 @Module({
   controllers: [ClerkController, PlaidController, PlaidWebhookController],
-  providers: [AuthService, DatabaseService, PlaidService, ClerkService],
-  imports: [AuthModule, DatabaseModule, PlaidModule],
+  providers: [
+    AuthService,
+    DatabaseService,
+    PlaidService,
+    ClerkService,
+    ExpoService,
+  ],
+  imports: [AuthModule, DatabaseModule, PlaidModule, ExpoModule],
 })
 export class AppModule {}
