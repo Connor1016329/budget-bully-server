@@ -17,6 +17,7 @@ export class DatabaseService {
   constructor(
     @Inject('DatabaseClient') private readonly databaseClient: any, // Inject the database client
   ) {}
+
   async updateUser(
     id: SelectUser['id'],
     data: Partial<Omit<SelectUser, 'id'>>,
@@ -50,6 +51,21 @@ export class DatabaseService {
       .limit(1);
     if (result.length > 0) {
       return result[0].id; // Return the first record
+    } else {
+      return null; // No matching record found
+    }
+  }
+
+  async getUserPushTokenByPlaidItemId(
+    plaidItemId: string,
+  ): Promise<string | null> {
+    const result = await this.databaseClient
+      .select({ push_token: users.pushToken })
+      .from(users)
+      .where(eq(users.itemId, plaidItemId))
+      .limit(1);
+    if (result.length > 0) {
+      return result[0].pushToken; // Return the first record
     } else {
       return null; // No matching record found
     }

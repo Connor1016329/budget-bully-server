@@ -126,11 +126,13 @@ export const transactions = pgTable(
   },
   (table) => {
     return {
-      transactionsAccountIdAccountsIdFk: foreignKey({
+      transactionsAccountIdFkey: foreignKey({
         columns: [table.accountId],
         foreignColumns: [accounts.id],
-        name: 'transactions_account_id_accounts_id_fk',
-      }),
+        name: 'transactions_account_id_fkey',
+      })
+        .onUpdate('cascade')
+        .onDelete('cascade'),
       transactionsUserIdFkey: foreignKey({
         columns: [table.userId],
         foreignColumns: [users.id],
@@ -183,6 +185,8 @@ export const users = pgTable('users', {
     .notNull(),
   cursor: text('cursor'),
   itemId: text('item_id'),
+  firstTime: boolean('first_time').default(true),
+  pushToken: text('push_token'),
 });
 
 // Export types for insertion and selection

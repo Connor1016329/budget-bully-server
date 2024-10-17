@@ -13,12 +13,13 @@ import {
   CreditAccountSubtype,
 } from 'plaid';
 import { DatabaseService } from '../database/database.service';
-
+import { ExpoService } from '../expo/expo.service';
 @Injectable()
 export class PlaidService {
   constructor(
     @Inject('PlaidClient') private readonly plaidClient: PlaidApi, // Inject PlaidClient
     private readonly databaseService: DatabaseService, // Inject DatabaseService
+    private readonly expoService: ExpoService,
   ) {}
 
   /**
@@ -220,6 +221,22 @@ export class PlaidService {
     await this.databaseService.updateUser(userId, {
       cursor: cursor,
     });
+
+    // if any transactions are unreviewed, get the users push_token and call fireNotification
+    const unreviewedTransactions = transactions.filter(
+      (transaction) => !transaction.reviewed,
+    );
+    if (unreviewedTransactions.length > 0) {
+      const pushToken =
+        await this.databaseService.getUserPushTokenByPlaidItemId(plaidItemId);
+      if (pushToken) {
+        await this.expoService.sendNotification(
+          pushToken,
+          'Unreviewed Transactions',
+          'You have unreviewed transactions.',
+        );
+      }
+    }
   }
 
   async deleteUser(id: string) {
