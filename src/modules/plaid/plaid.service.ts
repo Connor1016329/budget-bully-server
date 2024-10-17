@@ -229,6 +229,7 @@ export class PlaidService {
     if (unreviewedTransactions.length > 0) {
       const pushToken =
         await this.databaseService.getUserPushTokenByPlaidItemId(plaidItemId);
+      console.log('unreviewed transactions, sending notification', pushToken);
       if (pushToken) {
         await this.expoService.sendNotification(
           pushToken,
