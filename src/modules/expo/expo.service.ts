@@ -1,9 +1,10 @@
 import { Inject, Injectable } from '@nestjs/common';
+import Expo, { ExpoPushMessage } from 'expo-server-sdk';
 
 @Injectable()
 export class ExpoService {
   constructor(
-    @Inject('ExpoClient') private readonly expoClient: any, // Inject the Expo client
+    @Inject('ExpoClient') private readonly expoClient: Expo, // Inject the Expo client
   ) {}
 
   async sendMassNotifications(tokens: string[], title: string, body: string) {
@@ -13,7 +14,7 @@ export class ExpoService {
       // Each push token looks like ExponentPushToken[xxxxxxxxxxxxxxxxxxxxxx]
 
       // Check that all your push tokens appear to be valid Expo push tokens
-      if (!this.expoClient.isExpoPushToken(pushToken)) {
+      if (!Expo.isExpoPushToken(pushToken)) {
         console.error(`Push token ${pushToken} is not a valid Expo push token`);
         continue;
       }
@@ -95,12 +96,12 @@ export class ExpoService {
           // The receipts specify whether Apple or Google successfully received the
           // notification and information about an error, if one occurred.
           for (const receiptId in receipts) {
-            const { status, message, details } = receipts[receiptId];
+            const { status, details } = receipts[receiptId];
             if (status === 'ok') {
               continue;
             } else if (status === 'error') {
               console.error(
-                `There was an error sending a notification: ${message}`,
+                `There was an error sending a notification: ${details}`,
               );
               if (details && details.error) {
                 // The error codes are listed in the Expo documentation:
@@ -118,18 +119,18 @@ export class ExpoService {
   }
 
   async sendNotification(token: string, title: string, body: string) {
-    if (!this.expoClient.isExpoPushToken(token)) {
+    if (!Expo.isExpoPushToken(token)) {
       console.error(`Push token ${token} is not a valid Expo push token`);
       return;
     }
 
-    const message = {
+    const message: ExpoPushMessage = {
       to: token,
       sound: 'default',
       title: title,
       body: body,
     };
 
-    await this.expoClient.sendPushNotification(message);
+    await this.expoClient.sendPushNotificationsAsync([message]);
   }
 }
