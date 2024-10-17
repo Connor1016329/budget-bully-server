@@ -9,6 +9,8 @@ import {
   AccountsGetRequest,
   TransactionsSyncResponse,
   AccountBase,
+  DepositoryAccountSubtype,
+  CreditAccountSubtype,
 } from 'plaid';
 import { DatabaseService } from '../database/database.service';
 
@@ -39,6 +41,17 @@ export class PlaidService {
         client_name: 'Budget Bully',
         country_codes: [CountryCode.Us],
         redirect_uri: 'https://budget-bully.com',
+        account_filters: {
+          depository: {
+            account_subtypes: [
+              DepositoryAccountSubtype.Checking,
+              DepositoryAccountSubtype.Savings,
+            ],
+          },
+          credit: {
+            account_subtypes: [CreditAccountSubtype.CreditCard],
+          },
+        },
         webhook: webhook,
         language: 'en',
         user: {
