@@ -60,7 +60,7 @@ export class DatabaseService {
     plaidItemId: string,
   ): Promise<string | null> {
     const result = await this.databaseClient
-      .select({ push_token: users.pushToken })
+      .select()
       .from(users)
       .where(eq(users.itemId, plaidItemId))
       .limit(1);
