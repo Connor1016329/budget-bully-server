@@ -223,18 +223,27 @@ export class PlaidService {
     });
 
     // if any transactions are unreviewed, get the users push_token and call fireNotification
-    const unreviewedTransactions = transactions.filter(
-      (transaction) => !transaction.reviewed,
-    );
+
+    // get all transactions that are not reviewed and remove unneeded data
+    const unreviewedTransactions = transactions
+      .filter((transaction) => !transaction.reviewed)
+      .map((transaction) => {
+        return {
+          category: transaction.category,
+          detailedCategory: transaction.detailedCategory,
+          name: transaction.name.toString(),
+        };
+      });
+
+    // if there are unreviewed transactions, get the users push_token and call fireNotification
     if (unreviewedTransactions.length > 0) {
       const pushToken =
         await this.databaseService.getUserPushTokenByPlaidItemId(plaidItemId);
-      console.log('unreviewed transactions, sending notification', pushToken);
       if (pushToken) {
-        await this.expoService.sendNotification(
+        await this.expoService.sendUnreviewedTransactionsNotification(
           pushToken,
-          'Unreviewed Transactions',
-          'You have unreviewed transactions.',
+          unreviewedTransactions,
+          userId,
         );
       }
     }

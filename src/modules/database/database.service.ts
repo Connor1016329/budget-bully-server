@@ -1,6 +1,7 @@
 import { Inject, Injectable } from '@nestjs/common';
 import {
   accounts,
+  categories,
   InsertAccount,
   InsertTransaction,
   InsertUser,
@@ -128,6 +129,23 @@ export class DatabaseService {
         eq(accounts.userId, data[0].userId),
       ),
     );
+  }
+
+  async getCategoryStatusByUserIdAndCategory(
+    userId: string,
+    category: string,
+  ): Promise<string | null> {
+    const result = await this.databaseClient
+      .select()
+      .from(categories)
+      .where(
+        and(
+          eq(categories.userId, userId),
+          eq(categories.category, category as any),
+        ),
+      )
+      .limit(1);
+    return result[0].status;
   }
 
   async createTransaction(data: InsertTransaction) {

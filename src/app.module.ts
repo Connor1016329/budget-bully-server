@@ -11,8 +11,14 @@ import { PlaidWebhookController } from './modules/plaid/webhook.controller';
 import { ClerkService } from './modules/auth/clerk.service';
 import { ExpoModule } from './modules/expo/expo.module';
 import { ExpoService } from './modules/expo/expo.service';
+import { TestsController } from './modules/tests/tests.controller';
 @Module({
-  controllers: [ClerkController, PlaidController, PlaidWebhookController],
+  controllers: [
+    ClerkController,
+    PlaidController,
+    PlaidWebhookController,
+    TestsController,
+  ],
   providers: [
     AuthService,
     DatabaseService,

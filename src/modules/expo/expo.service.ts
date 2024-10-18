@@ -1,10 +1,12 @@
 import { Inject, Injectable } from '@nestjs/common';
 import Expo, { ExpoPushMessage } from 'expo-server-sdk';
+import { DatabaseService } from '../database/database.service';
 
 @Injectable()
 export class ExpoService {
   constructor(
     @Inject('ExpoClient') private readonly expoClient: Expo, // Inject the Expo client
+    private readonly databaseService: DatabaseService,
   ) {}
 
   async sendMassNotifications(tokens: string[], title: string, body: string) {
@@ -118,7 +120,15 @@ export class ExpoService {
     })();
   }
 
-  async sendNotification(token: string, title: string, body: string) {
+  async sendUnreviewedTransactionsNotification(
+    token: string,
+    transactions: {
+      category: any;
+      detailedCategory: any;
+      name: string;
+    }[],
+    userId: string,
+  ) {
     if (!Expo.isExpoPushToken(token)) {
       console.error(`Push token ${token} is not a valid Expo push token`);
       return;
@@ -127,9 +137,144 @@ export class ExpoService {
     const message: ExpoPushMessage = {
       to: token,
       sound: 'default',
-      title: title,
-      body: body,
     };
+
+    let flag = false;
+
+    // if categories include PERSONAL_CARE, GENERAL_MERCHANDISE, FOOD_AND_DRINK, ENTERTAINMENT, or TRAVEL, send a notification
+    if (
+      transactions.some(
+        (transaction) => transaction.category === 'GENERAL_MERCHANDISE',
+      )
+    ) {
+      // if users GENERAL_MERCHANDISE status is not GOOD, send a notification
+      const status =
+        await this.databaseService.getCategoryStatusByUserIdAndCategory(
+          userId,
+          'GENERAL_MERCHANDISE',
+        );
+      if (status !== 'GOOD') {
+        flag = true;
+        message.title = 'General Merchandise';
+        message.subtitle = 'Unreviewed transactions';
+        if (
+          transactions.some((transaction) =>
+            transaction.name.includes('Target'),
+          )
+        ) {
+          message.body =
+            'Target strikes again! Walking in for toothpaste and walking out with an entire patio set and a baby Yoda mug, because self-control is overrated.';
+        } else if (
+          transactions.some((transaction) =>
+            transaction.name.includes('Amazon'),
+          )
+        ) {
+          message.body =
+            'Another Amazon purchase? Your front porch is starting to look like a warehouse. Too bad your wallet’s more like an empty shipping box.';
+        } else {
+          message.body =
+            'Over budget on shopping? You must think of yourself as a philanthropist, generously donating to ‘The Help Me Stay Broke’ Foundation.';
+        }
+      }
+    }
+    if (
+      transactions.some(
+        (transaction) => transaction.category === 'FOOD_AND_DRINK',
+      ) &&
+      !flag
+    ) {
+      // if users FOOD_AND_DRINK status is not GOOD, send a notification
+      const status =
+        await this.databaseService.getCategoryStatusByUserIdAndCategory(
+          userId,
+          'FOOD_AND_DRINK',
+        );
+      if (status !== 'GOOD') {
+        flag = true;
+        message.title = 'Food and Drink';
+        message.subtitle = 'Unreviewed transactions';
+        if (
+          transactions.some((transaction) =>
+            transaction.name.includes('Starbucks'),
+          )
+        ) {
+          message.body =
+            'Spending your rent money on caramel macchiatos? That’s one expensive way to pretend you’re productive while you procrastinate your way into poverty.';
+        } else if (
+          transactions.some((transaction) =>
+            transaction.name.includes('McDonald'),
+          )
+        ) {
+          message.body =
+            'Another meal out? Sure, why cook at home when you can eat like a king and budget like a court jester.';
+        } else {
+          message.body =
+            "You spent how much at McDonald's? If your savings account had as much grease as those fries, maybe it wouldn’t be so slippery.";
+        }
+      }
+    }
+    if (
+      transactions.some(
+        (transaction) => transaction.category === 'PERSONAL_CARE',
+      ) &&
+      !flag
+    ) {
+      // if users PERSONAL_CARE status is not GOOD, send a notification
+      const status =
+        await this.databaseService.getCategoryStatusByUserIdAndCategory(
+          userId,
+          'PERSONAL_CARE',
+        );
+      if (status !== 'GOOD') {
+        flag = true;
+        message.title = 'Personal Care';
+        message.subtitle = 'Unreviewed transactions';
+        message.body =
+          'You’re spending so much on skincare that your budget needs wrinkle cream. At least your face will look great while you’re crying over your credit card bill.';
+      }
+    }
+    if (
+      transactions.some(
+        (transaction) => transaction.category === 'ENTERTAINMENT',
+      ) &&
+      !flag
+    ) {
+      // if users ENTERTAINMENT status is not GOOD, send a notification
+      const status =
+        await this.databaseService.getCategoryStatusByUserIdAndCategory(
+          userId,
+          'ENTERTAINMENT',
+        );
+      if (status !== 'GOOD') {
+        flag = true;
+        message.title = 'Entertainment';
+        message.subtitle = 'Unreviewed transactions';
+        message.body =
+          'Oh, you’re over budget on fun stuff again? Guess someone thought they were starring in The Wolf of Wall Street. Spoiler alert: You’re more like ‘Broke of Main Street.’';
+      }
+    }
+    if (
+      transactions.some((transaction) => transaction.category === 'TRAVEL') &&
+      !flag
+    ) {
+      // if users TRAVEL status is not GOOD, send a notification
+      const status =
+        await this.databaseService.getCategoryStatusByUserIdAndCategory(
+          userId,
+          'TRAVEL',
+        );
+      if (status !== 'GOOD') {
+        flag = true;
+        message.title = 'Travel';
+        message.subtitle = 'Unreviewed transactions';
+        message.body =
+          'Over budget on travel? Nice! Now you can run away from your responsibilities in style.';
+      }
+    }
+    if (!flag) {
+      message.title = 'Unreviewed Transactions';
+      message.body = 'You have unreviewed transactions';
+    }
 
     await this.expoClient.sendPushNotificationsAsync([message]);
   }
