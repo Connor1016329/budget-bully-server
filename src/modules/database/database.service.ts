@@ -5,6 +5,8 @@ import {
   InsertAccount,
   InsertTransaction,
   InsertUser,
+  items,
+  SelectItem,
   SelectTransaction,
   SelectUser,
   transactions,
@@ -62,8 +64,8 @@ export class DatabaseService {
   ): Promise<string | null> {
     const result = await this.databaseClient
       .select()
-      .from(users)
-      .where(eq(users.itemId, plaidItemId))
+      .from(items)
+      .where(eq(items.id, plaidItemId))
       .limit(1);
     if (result.length > 0) {
       return result[0].pushToken; // Return the first record
@@ -74,9 +76,9 @@ export class DatabaseService {
 
   async getUserIdByAccessToken(accessToken: string) {
     const result = await this.databaseClient
-      .select({ id: users.id })
-      .from(users)
-      .where(eq(users.accessToken, accessToken))
+      .select({ id: items.userId })
+      .from(items)
+      .where(eq(items.accessToken, accessToken))
       .limit(1);
     if (result.length > 0) {
       return result[0].id; // Return the first record
@@ -87,9 +89,9 @@ export class DatabaseService {
 
   async getAccessTokenByUserId(userId: string) {
     const result = await this.databaseClient
-      .select({ accessToken: users.accessToken })
-      .from(users)
-      .where(eq(users.id, userId));
+      .select({ accessToken: items.accessToken })
+      .from(items)
+      .where(eq(items.userId, userId));
     if (result.length === 1) {
       return result[0].accessToken;
     } else {
@@ -97,11 +99,11 @@ export class DatabaseService {
     }
   }
 
-  async retrieveItemByPlaidItemId(itemId: string): Promise<SelectUser> {
+  async retrieveItemByPlaidItemId(itemId: string): Promise<SelectItem | null> {
     const result = await this.databaseClient
       .select()
-      .from(users)
-      .where(eq(users.itemId, itemId));
+      .from(items)
+      .where(eq(items.id, itemId));
     return result[0];
   }
 
@@ -182,5 +184,19 @@ export class DatabaseService {
       console.error('Error fetching transactions for user', error);
       throw new Error('Failed to retrieve transactions');
     }
+  }
+
+  async updateOrCreateItem(id: string, data: Partial<SelectItem>) {
+    await this.databaseClient
+      .insert(items)
+      .values(data)
+      .onConflictDoUpdate({
+        target: [items.id],
+        set: data,
+      });
+  }
+
+  async updateItem(id: string, data: Partial<SelectItem>) {
+    await this.databaseClient.update(items).set(data).where(eq(items.id, id));
   }
 }

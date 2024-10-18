@@ -33,7 +33,6 @@ export class PlaidService {
     try {
       const accessToken: string | null =
         await this.databaseService.getAccessTokenByUserId(userId);
-
       const webhook = process.env.PORT
         ? 'https://api.budget-bully.com/plaid/webhook'
         : 'https://mallard-possible-horse.ngrok-free.app/plaid/webhook';
@@ -101,10 +100,14 @@ export class PlaidService {
       ]);
 
       // Save the access token to the database
-      await this.databaseService.updateUser(userId, {
-        accessToken: tokenResponse.data.access_token,
-        itemId: tokenResponse.data.item_id,
-      });
+      await this.databaseService.updateOrCreateItem(
+        tokenResponse.data.item_id,
+        {
+          id: tokenResponse.data.item_id,
+          userId,
+          accessToken: tokenResponse.data.access_token,
+        },
+      );
 
       console.log(`Updated user ${userId} with access token and item ID`);
 
@@ -128,7 +131,7 @@ export class PlaidService {
       throw new Error(`Item not found for ID: ${itemId}`);
     }
 
-    const { accessToken, cursor: lastCursor, id: userId } = item;
+    const { accessToken, cursor: lastCursor, userId } = item;
 
     if (!accessToken) {
       console.error(`Access token is missing for item ID: ${itemId}`);
@@ -218,7 +221,7 @@ export class PlaidService {
       ),
     ]);
 
-    await this.databaseService.updateUser(userId, {
+    await this.databaseService.updateItem(plaidItemId, {
       cursor: cursor,
     });
 

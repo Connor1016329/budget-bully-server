@@ -1,4 +1,4 @@
-import { pgTable, foreignKey, unique, uuid, text, doublePrecision, timestamp, varchar, boolean, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, text, timestamp, unique, uuid, doublePrecision, varchar, boolean, pgEnum } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const alertType = pgEnum("alert_type", ['uncategorizedTransaction', 'overBudget', 'almostOverBudget', 'accountNeedsAction'])
@@ -6,6 +6,25 @@ export const budgetCategory = pgEnum("budget_category", ['BANK_FEES', 'ENTERTAIN
 export const categoryStatus = pgEnum("category_status", ['GOOD', 'ALMOST_OVER', 'OVER'])
 
 
+
+export const items = pgTable("items", {
+	id: text("id").primaryKey().notNull(),
+	userId: text("user_id").notNull(),
+	accessToken: text("access_token"),
+	cursor: text("cursor"),
+	status: text("status").default('GOOD').notNull(),
+	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
+},
+(table) => {
+	return {
+		itemsUserIdFkey: foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "items_user_id_fkey"
+		}).onUpdate("cascade").onDelete("cascade"),
+	}
+});
 
 export const categories = pgTable("categories", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
@@ -100,11 +119,8 @@ export const users = pgTable("users", {
 	firstName: varchar("first_name").notNull(),
 	lastName: varchar("last_name").notNull(),
 	linkTokenId: text("link_token_id"),
-	accessToken: text("access_token"),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
-	cursor: text("cursor"),
-	itemId: text("item_id"),
 	firstTime: boolean("first_time").default(true),
 	pushToken: text("push_token"),
 });
