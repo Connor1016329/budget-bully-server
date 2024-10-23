@@ -19,7 +19,10 @@ import { DatabaseModule } from '../database/database.module';
           baseOptions: {
             headers: {
               'PLAID-CLIENT-ID': configService.get('PLAID_CLIENT_ID'),
-              'PLAID-SECRET': configService.get('PLAID_SECRET'),
+              'PLAID-SECRET':
+                configService.get('PLAID_ENV') === 'production'
+                  ? configService.get('PLAID_SECRET_PRODUCTION')
+                  : configService.get('PLAID_SECRET_SANDBOX'),
               'Plaid-Version': '2020-09-14',
             },
           },

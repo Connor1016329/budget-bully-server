@@ -57,8 +57,6 @@ export class PlaidWebhookController {
     const type = payload.webhook_type;
     const code = payload.webhook_code;
 
-    console.log('Plaid Webhook received - Type: ', type, '  Code: ', code);
-
     switch (type) {
       case 'LINK':
         if (code === 'SESSION_FINISHED' && payload.status === 'success') {
@@ -76,13 +74,14 @@ export class PlaidWebhookController {
 
       case 'TRANSACTIONS':
         if (code === 'SYNC_UPDATES_AVAILABLE') {
-          console.log('Sync updates available for item', payload.item_id);
           try {
             await this.plaidService.updateTransactions(payload.item_id);
           } catch (error) {
             console.error('Error updating transactions:', error);
           }
         }
+
+        break;
 
       default:
         console.log('Unhandled Webhook');

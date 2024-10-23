@@ -23,8 +23,8 @@ export class PlaidController {
 
       return { linkToken };
     } catch (error) {
-      console.error('Error verifying token: ', error);
-      throw new UnauthorizedException('Token not verified.');
+      console.error('Error creating link token: ', error);
+      throw new Error(`Failed to create link token: ${error.message}`);
     }
   }
 }

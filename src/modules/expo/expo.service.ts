@@ -53,7 +53,7 @@ export class ExpoService {
           // documentation:
           // https://docs.expo.io/push-notifications/sending-notifications/#individual-errors
         } catch (error) {
-          console.error(error);
+          console.error(error.message, '\n', error.response.data);
         }
       }
     })();
@@ -114,7 +114,7 @@ export class ExpoService {
             }
           }
         } catch (error) {
-          console.error(error);
+          console.error(error.message, '\n', error.response.data);
         }
       }
     })();
