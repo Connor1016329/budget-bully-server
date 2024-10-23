@@ -1,10 +1,12 @@
 import { Injectable } from '@nestjs/common';
 import { DatabaseService } from '../database/database.service';
+import { PlaidService } from '../plaid/plaid.service';
 
 @Injectable()
 export class ClerkService {
   constructor(
     private readonly databaseService: DatabaseService, // Inject DatabaseService
+    private readonly plaidService: PlaidService,
   ) {}
 
   async createUser(data) {
@@ -27,6 +29,7 @@ export class ClerkService {
 
   async deleteUser(id) {
     try {
+      await this.plaidService.deleteUser(id);
       await this.databaseService.deleteUser(id);
     } catch (error) {
       console.error('Error deleting user:', error);

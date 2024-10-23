@@ -9,14 +9,18 @@ import {
   AccountsGetRequest,
   TransactionsSyncResponse,
   AccountBase,
+  DepositoryAccountSubtype,
+  CreditAccountSubtype,
 } from 'plaid';
 import { DatabaseService } from '../database/database.service';
+import { ExpoService } from '../expo/expo.service';
 
 @Injectable()
 export class PlaidService {
   constructor(
     @Inject('PlaidClient') private readonly plaidClient: PlaidApi, // Inject PlaidClient
     private readonly databaseService: DatabaseService, // Inject DatabaseService
+    private readonly expoService: ExpoService,
   ) {}
 
   /**
@@ -30,7 +34,6 @@ export class PlaidService {
     try {
       const accessToken: string | null =
         await this.databaseService.getAccessTokenByUserId(userId);
-
       const webhook = process.env.PORT
         ? 'https://api.budget-bully.com/plaid/webhook'
         : 'https://mallard-possible-horse.ngrok-free.app/plaid/webhook';
@@ -39,6 +42,14 @@ export class PlaidService {
         client_name: 'Budget Bully',
         country_codes: [CountryCode.Us],
         redirect_uri: 'https://budget-bully.com',
+        account_filters: {
+          depository: {
+            account_subtypes: [DepositoryAccountSubtype.All],
+          },
+          credit: {
+            account_subtypes: [CreditAccountSubtype.All],
+          },
+        },
         webhook: webhook,
         language: 'en',
         user: {
@@ -67,8 +78,13 @@ export class PlaidService {
 
       return tokenResponse.data;
     } catch (error) {
-      console.error('Error creating link token', error);
-      return null;
+      console.error(
+        'Error creating link token',
+        error.message,
+        '\n',
+        error.response?.data,
+      );
+      throw new Error(`Failed to create link token: ${error.message}`);
     }
   }
 
@@ -87,17 +103,19 @@ export class PlaidService {
       ]);
 
       // Save the access token to the database
-      await this.databaseService.updateUser(userId, {
-        accessToken: tokenResponse.data.access_token,
-        itemId: tokenResponse.data.item_id,
-      });
-
-      console.log(`Updated user ${userId} with access token and item ID`);
-
+      await this.databaseService.updateOrCreateItem(
+        tokenResponse.data.item_id,
+        {
+          id: tokenResponse.data.item_id,
+          userId,
+          accessToken: tokenResponse.data.access_token,
+          updatedAt: new Date().toISOString(),
+        },
+      );
       this.updateTransactions(tokenResponse.data.item_id);
     } catch (error) {
       console.error('Error creating access token', error);
-      return null;
+      throw new Error(`Failed to exchange public token: ${error.message}`);
     }
   }
 
@@ -107,54 +125,59 @@ export class PlaidService {
    * @returns A promise that resolves to an array of transactions or null if an error occurs.
    */
   async fetchTransactionUpdates(itemId: string) {
-    const item = await this.databaseService.retrieveItemByPlaidItemId(itemId);
-
-    if (!item) {
-      console.error(`No item found for Plaid item ID: ${itemId}`);
-      throw new Error(`Item not found for ID: ${itemId}`);
-    }
-
-    const { accessToken, cursor: lastCursor, id: userId } = item;
-
-    if (!accessToken) {
-      console.error(`Access token is missing for item ID: ${itemId}`);
-      throw new Error(`Access token missing for item ID: ${itemId}`);
-    }
-
-    let cursor = lastCursor;
-
-    // New transaction updates since "cursor"
-    let added: TransactionsSyncResponse['added'] = [];
-    let modified: TransactionsSyncResponse['modified'] = [];
-    // Removed transaction ids
-    let removed: TransactionsSyncResponse['removed'] = [];
-    let hasMore = true;
-
-    const batchSize = 100;
     try {
-      // Iterate through each page of new transaction updates for item
-      while (hasMore) {
-        const request = {
-          access_token: accessToken,
-          cursor: cursor,
-          count: batchSize,
-        };
-        const response = await this.plaidClient.transactionsSync(request);
-        const data = response.data as TransactionsSyncResponse;
+      const item = await this.databaseService.retrieveItemByPlaidItemId(itemId);
 
-        // Add this page of results
-        added = added.concat(data.added);
-        modified = modified.concat(data.modified);
-        removed = removed.concat(data.removed);
-        hasMore = data.has_more;
-        // Update cursor to the next cursor
-        cursor = data.next_cursor;
+      if (!item) {
+        console.error(`No item found for Plaid item ID: ${itemId}`);
+        throw new Error(`Item not found for ID: ${itemId}`);
       }
-    } catch (err) {
-      console.error(`Error fetching transactions: ${err.message}`);
-      cursor = lastCursor;
+
+      const { accessToken, cursor: lastCursor, userId } = item;
+
+      if (!accessToken) {
+        console.error(`Access token is missing for item ID: ${itemId}`);
+        throw new Error(`Access token missing for item ID: ${itemId}`);
+      }
+
+      let cursor = lastCursor;
+
+      // New transaction updates since "cursor"
+      let added: TransactionsSyncResponse['added'] = [];
+      let modified: TransactionsSyncResponse['modified'] = [];
+      // Removed transaction ids
+      let removed: TransactionsSyncResponse['removed'] = [];
+      let hasMore = true;
+
+      const batchSize = 100;
+      try {
+        // Iterate through each page of new transaction updates for item
+        while (hasMore) {
+          const request = {
+            access_token: accessToken,
+            cursor: cursor,
+            count: batchSize,
+          };
+          const response = await this.plaidClient.transactionsSync(request);
+          const data = response.data as TransactionsSyncResponse;
+
+          // Add this page of results
+          added = added.concat(data.added);
+          modified = modified.concat(data.modified);
+          removed = removed.concat(data.removed);
+          hasMore = data.has_more;
+          // Update cursor to the next cursor
+          cursor = data.next_cursor;
+        }
+      } catch (err) {
+        console.error(`Error fetching transactions: ${err.message}`);
+        cursor = lastCursor;
+      }
+      return { added, modified, removed, cursor, accessToken, userId };
+    } catch (error) {
+      console.error(`Error fetching transactions: ${error.message}`);
+      throw new Error(`Failed to fetch transaction updates: ${error.message}`);
     }
-    return { added, modified, removed, cursor, accessToken, userId };
   }
 
   /**
@@ -163,50 +186,100 @@ export class PlaidService {
    * @param {string} plaidItemId the Plaid ID for the item.
    */
   async updateTransactions(plaidItemId: string) {
-    // Fetch new transactions from plaid api.
-    const { added, modified, removed, cursor, userId, accessToken } =
-      await this.fetchTransactionUpdates(plaidItemId);
+    try {
+      // Fetch new transactions from plaid api.
+      const { added, modified, removed, cursor, userId, accessToken } =
+        await this.fetchTransactionUpdates(plaidItemId);
 
-    const response = await this.plaidClient.accountsGet({
-      access_token: accessToken,
-    } as AccountsGetRequest);
+      const response = await this.plaidClient.accountsGet({
+        access_token: accessToken,
+      } as AccountsGetRequest);
 
-    const accounts = response.data.accounts.map((account: AccountBase) => ({
-      id: account.account_id,
-      userId: userId,
-      name: account.name,
-      balance: account.balances.available ?? account.balances.current,
-    }));
+      const accounts = response.data.accounts.map((account: AccountBase) => ({
+        id: account.account_id,
+        userId: userId,
+        name: account.name,
+        balance: account.balances.available ?? account.balances.current,
+      }));
 
-    const transactionData = added.concat(modified);
+      const transactionData = added.concat(modified);
 
-    // Extract transaction details: names, dates, and amounts
-    const transactions = transactionData.map((transaction: any) => ({
-      id: transaction.transaction_id,
-      userId: userId,
-      accountId: transaction.account_id,
-      name: transaction.name,
-      date: transaction.authorized_date || transaction.date,
-      amount: transaction.amount,
-      reviewed: new Date(transaction.date).getMonth() !== new Date().getMonth(),
-      category: transaction.personal_finance_category.primary,
-      detailedCategory: transaction.personal_finance_category.detailed,
-    }));
+      // Extract transaction details: names, dates, and amounts
+      const transactions = transactionData.map((transaction: any) => ({
+        id: transaction.transaction_id,
+        userId: userId,
+        accountId: transaction.account_id,
+        name: transaction.name,
+        date: transaction.authorized_date || transaction.date,
+        amount: transaction.amount,
+        reviewed:
+          new Date(transaction.date).getMonth() !== new Date().getMonth(),
+        category: transaction.personal_finance_category.primary,
+        detailedCategory: transaction.personal_finance_category.detailed,
+      }));
 
-    await this.databaseService.updateCreateOrDeleteAccounts(accounts);
+      await this.databaseService.updateCreateOrDeleteAccounts(accounts);
 
-    await Promise.all([
-      ...transactions.map((transaction) =>
-        this.databaseService.updateOrCreateTransaction(transaction),
-      ),
-      ...removed.map((transaction) =>
-        this.databaseService.deleteTransaction(transaction.transaction_id),
-      ),
-    ]);
+      await Promise.all([
+        ...transactions.map((transaction) =>
+          this.databaseService.updateOrCreateTransaction(transaction),
+        ),
+        ...removed.map((transaction) =>
+          this.databaseService.deleteTransaction(transaction.transaction_id),
+        ),
+      ]);
 
-    await this.databaseService.updateUser(userId, {
-      cursor: cursor,
-    });
+      await this.databaseService.updateItem(plaidItemId, {
+        cursor: cursor,
+      });
+
+      // if any transactions are unreviewed, get the users push_token and call fireNotification
+
+      // get all transactions that are not reviewed and remove unneeded data
+      const unreviewedTransactions = transactions
+        .filter((transaction) => !transaction.reviewed)
+        .map((transaction) => {
+          return {
+            category: transaction.category,
+            detailedCategory: transaction.detailedCategory,
+            name: transaction.name.toString(),
+          };
+        });
+
+      // if there are unreviewed transactions, get the users push_token and call fireNotification
+      if (unreviewedTransactions.length > 0) {
+        await this.databaseService
+          .getUserPushTokenByPlaidItemId(plaidItemId)
+          .then((pushToken) => {
+            if (pushToken) {
+              this.expoService.sendUnreviewedTransactionsNotification(
+                pushToken,
+                unreviewedTransactions,
+                userId,
+              );
+            }
+          });
+      }
+    } catch (error) {
+      console.error(`Failed to update transactions: ${error.message}`);
+      throw new Error(`Failed to update transactions: ${error.message}`);
+    }
+  }
+
+  async deleteUser(id: string) {
+    try {
+      const accessToken = await this.databaseService.getAccessTokenByUserId(id);
+      if (accessToken) {
+        console.log('plaid removing item');
+        const response = await this.plaidClient.itemRemove({
+          access_token: accessToken,
+        });
+        console.log(response.data);
+      }
+    } catch (error) {
+      console.error(`Failed to delete user: ${error.message}`);
+      throw new Error(`Failed to delete user: ${error.message}`);
+    }
   }
 
   /**
@@ -218,7 +291,7 @@ export class PlaidService {
       return await this.databaseService.getUsers();
     } catch (error) {
       console.error('Error fetching users', error);
-      return null;
+      throw new Error(`Failed to get users: ${error.message}`);
     }
   }
 }

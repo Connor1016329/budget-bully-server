@@ -1,11 +1,11 @@
 import {
   pgTable,
   foreignKey,
+  text,
+  timestamp,
   unique,
   uuid,
-  text,
   doublePrecision,
-  timestamp,
   varchar,
   boolean,
   pgEnum,
@@ -42,6 +42,34 @@ export const categoryStatus = pgEnum('category_status', [
   'ALMOST_OVER',
   'OVER',
 ]);
+
+export const items = pgTable(
+  'items',
+  {
+    id: text('id').primaryKey().notNull(),
+    userId: text('user_id').notNull(),
+    accessToken: text('access_token'),
+    cursor: text('cursor'),
+    status: text('status').default('GOOD').notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => {
+    return {
+      itemsUserIdFkey: foreignKey({
+        columns: [table.userId],
+        foreignColumns: [users.id],
+        name: 'items_user_id_fkey',
+      })
+        .onUpdate('cascade')
+        .onDelete('cascade'),
+    };
+  },
+);
 
 export const categories = pgTable(
   'categories',
@@ -126,11 +154,13 @@ export const transactions = pgTable(
   },
   (table) => {
     return {
-      transactionsAccountIdAccountsIdFk: foreignKey({
+      transactionsAccountIdFkey: foreignKey({
         columns: [table.accountId],
         foreignColumns: [accounts.id],
-        name: 'transactions_account_id_accounts_id_fk',
-      }),
+        name: 'transactions_account_id_fkey',
+      })
+        .onUpdate('cascade')
+        .onDelete('cascade'),
       transactionsUserIdFkey: foreignKey({
         columns: [table.userId],
         foreignColumns: [users.id],
@@ -174,15 +204,14 @@ export const users = pgTable('users', {
   firstName: varchar('first_name').notNull(),
   lastName: varchar('last_name').notNull(),
   linkTokenId: text('link_token_id'),
-  accessToken: text('access_token'),
   createdAt: timestamp('created_at', { withTimezone: true, mode: 'string' })
     .defaultNow()
     .notNull(),
   updatedAt: timestamp('updated_at', { withTimezone: true, mode: 'string' })
     .defaultNow()
     .notNull(),
-  cursor: text('cursor'),
-  itemId: text('item_id'),
+  firstTime: boolean('first_time').default(true),
+  pushToken: text('push_token'),
 });
 
 // Export types for insertion and selection
@@ -200,3 +229,6 @@ export type SelectCategory = typeof categories.$inferSelect;
 
 export type InsertAlert = typeof alerts.$inferInsert;
 export type SelectAlert = typeof alerts.$inferSelect;
+
+export type InsertItem = typeof items.$inferInsert;
+export type SelectItem = typeof items.$inferSelect;
