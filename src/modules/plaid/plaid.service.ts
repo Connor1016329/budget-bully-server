@@ -290,11 +290,24 @@ export class PlaidService {
       }
 
       // remove transactions that are longer than 2 months old
-      transactions = transactions.filter(
-        (transaction) =>
-          new Date(transaction.date) >=
-          new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
-      );
+      transactions = transactions.filter((transaction) => {
+        const transactionYearMonth = transaction.date.substring(0, 7);
+
+        const currentDate = new Date();
+        const currentYearMonth = currentDate.toISOString().substring(0, 7);
+
+        const lastMonthDate = new Date(
+          currentDate.getFullYear(),
+          currentDate.getMonth() - 1,
+          1,
+        );
+        const lastMonthYearMonth = lastMonthDate.toISOString().substring(0, 7);
+
+        return (
+          transactionYearMonth === currentYearMonth ||
+          transactionYearMonth === lastMonthYearMonth
+        );
+      });
 
       await this.databaseService.updateCreateOrDeleteAccounts(accounts);
 
