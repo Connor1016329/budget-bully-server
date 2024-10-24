@@ -11,6 +11,7 @@ import {
   AccountBase,
   DepositoryAccountSubtype,
   CreditAccountSubtype,
+  Transaction,
 } from 'plaid';
 import { DatabaseService } from '../database/database.service';
 import { ExpoService } from '../expo/expo.service';
@@ -60,6 +61,9 @@ export class PlaidService {
           completion_redirect_uri: 'https://budget-bully.com',
           is_mobile_app: true,
           url_lifetime_seconds: 900,
+        },
+        transactions: {
+          days_requested: 180,
         },
       };
 
@@ -149,7 +153,7 @@ export class PlaidService {
       let removed: TransactionsSyncResponse['removed'] = [];
       let hasMore = true;
 
-      const batchSize = 100;
+      const batchSize = 200;
       try {
         // Iterate through each page of new transaction updates for item
         while (hasMore) {
@@ -200,23 +204,97 @@ export class PlaidService {
         userId: userId,
         name: account.name,
         balance: account.balances.available ?? account.balances.current,
+        updatedAt: new Date().toISOString(),
+        mask: account.mask,
+        type: account.type,
       }));
 
       const transactionData = added.concat(modified);
 
       // Extract transaction details: names, dates, and amounts
-      const transactions = transactionData.map((transaction: any) => ({
-        id: transaction.transaction_id,
-        userId: userId,
-        accountId: transaction.account_id,
-        name: transaction.name,
-        date: transaction.authorized_date || transaction.date,
-        amount: transaction.amount,
-        reviewed:
-          new Date(transaction.date).getMonth() !== new Date().getMonth(),
-        category: transaction.personal_finance_category.primary,
-        detailedCategory: transaction.personal_finance_category.detailed,
-      }));
+      let transactions = transactionData.map((transaction: Transaction) => {
+        let category = transaction.personal_finance_category.primary;
+        const subCategory = transaction.personal_finance_category.detailed;
+
+        switch (subCategory) {
+          case 'FOOD_AND_DRINK_COFFEE':
+          case 'FOOD_AND_DRINK_FAST_FOOD':
+          case 'FOOD_AND_DRINK_RESTAURANTS':
+          case 'FOOD_AND_DRINK_VENDING_MACHINES':
+          case 'FOOD_AND_DRINK_OTHER_FOOD_AND_DRINK':
+            category = 'EATING_OUT';
+            break;
+          case 'FOOD_AND_DRINK_BEER_WINE_AND_LIQUOR':
+            category = 'ENTERTAINMENT';
+            break;
+          case 'FOOD_AND_DRINK_GROCERIES':
+            category = 'GROCERIES';
+            break;
+
+          case 'GENERAL_SERVICES_INSURANCE':
+            category = 'INSURANCE';
+            break;
+          case 'PERSONAL_CARE_GYMS_AND_FITNESS_CENTERS':
+            category = 'SUBSCRIPTIONS';
+            break;
+          case 'PERSONAL_CARE_LAUNDRY_AND_DRY_CLEANING':
+            category = 'RENT_AND_UTILITIES';
+            break;
+
+          case 'TRANSFER_OUT_INVESTMENT_AND_RETIREMENT_FUNDS':
+            category = 'SAVINGS';
+            break;
+          case 'TRANSFER_OUT_SAVINGS':
+            category = 'SAVINGS';
+            break;
+        }
+
+        switch (category) {
+          case 'GOVERNMENT_AND_NON_PROFIT':
+            category = 'BANK_FEES';
+            break;
+          case 'HOME_IMPROVEMENT':
+            category = 'SHOPPING';
+            break;
+          case 'MEDICAL':
+            category = 'OTHER';
+            break;
+        }
+
+        return {
+          id: transaction.transaction_id,
+          userId: userId,
+          accountId: transaction.account_id,
+          name: transaction.merchant_name || transaction.name,
+          date: transaction.authorized_date || transaction.date,
+          amount: transaction.amount,
+          reviewed:
+            new Date(transaction.date).getMonth() !== new Date().getMonth(),
+          category: category,
+          detailedCategory: subCategory,
+          updatedAt: new Date().toISOString(),
+          pending: transaction.pending,
+          logoUrl: transaction.logo_url,
+        };
+      });
+
+      const userTransactions =
+        await this.databaseService.getTransactionsByUserId(userId);
+
+      if (userTransactions.length > 0) {
+        await this.databaseService.setSuggestedLimits(
+          userId,
+          transactions,
+          accounts,
+        );
+      }
+
+      // remove transactions that are longer than 2 months old
+      transactions = transactions.filter(
+        (transaction) =>
+          new Date(transaction.date) >=
+          new Date(Date.now() - 60 * 24 * 60 * 60 * 1000),
+      );
 
       await this.databaseService.updateCreateOrDeleteAccounts(accounts);
 
@@ -280,6 +358,13 @@ export class PlaidService {
       console.error(`Failed to delete user: ${error.message}`);
       throw new Error(`Failed to delete user: ${error.message}`);
     }
+  }
+
+  async updateWebhook(accessToken: string, webhook: string) {
+    await this.plaidClient.itemWebhookUpdate({
+      access_token: accessToken,
+      webhook: webhook,
+    });
   }
 
   /**

@@ -15,7 +15,7 @@ import * as JWT from 'jose';
 import * as sha256 from 'js-sha256';
 import * as secureCompare from 'secure-compare';
 import { JWTVerifyOptions } from 'jose';
-
+import { DatabaseService } from '../database/database.service';
 interface PlaidJwtPayload extends JWT.JWTPayload {
   request_body_sha256: string;
 }
@@ -27,6 +27,7 @@ export class PlaidWebhookController {
   constructor(
     @Inject('PlaidClient') private readonly plaidClient: PlaidApi,
     private readonly plaidService: PlaidService,
+    private readonly databaseService: DatabaseService,
   ) {}
 
   @Post()
@@ -61,10 +62,18 @@ export class PlaidWebhookController {
       case 'LINK':
         if (code === 'SESSION_FINISHED' && payload.status === 'success') {
           try {
-            await this.plaidService.exchangePublicToken(
+            const userId = await this.databaseService.getUserIdByLinkToken(
               payload.link_token,
-              payload.public_tokens[0],
             );
+            const accessToken =
+              await this.databaseService.getAccessTokenByUserId(userId);
+
+            if (!accessToken) {
+              await this.plaidService.exchangePublicToken(
+                payload.link_token,
+                payload.public_tokens[0],
+              );
+            }
           } catch (error) {
             console.error('Error exchanging public token:', error);
           }

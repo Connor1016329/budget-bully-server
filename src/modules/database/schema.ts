@@ -3,11 +3,12 @@ import {
   foreignKey,
   text,
   timestamp,
+  varchar,
+  doublePrecision,
+  boolean,
   unique,
   uuid,
-  doublePrecision,
-  varchar,
-  boolean,
+  smallint,
   pgEnum,
 } from 'drizzle-orm/pg-core';
 import { sql } from 'drizzle-orm';
@@ -71,12 +72,53 @@ export const items = pgTable(
   },
 );
 
+export const transactions = pgTable(
+  'transactions',
+  {
+    id: text('id').primaryKey().notNull(),
+    accountId: text('account_id').notNull(),
+    name: varchar('name').notNull(),
+    date: text('date').notNull(),
+    amount: doublePrecision('amount').notNull(),
+    createdAt: timestamp('created_at', { mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp('updated_at', { mode: 'string' })
+      .defaultNow()
+      .notNull(),
+    userId: text('user_id').notNull(),
+    reviewed: boolean('reviewed').default(false).notNull(),
+    category: text('category').notNull(),
+    detailedCategory: text('detailed_category').default('OTHER').notNull(),
+    pending: boolean('pending').default(false).notNull(),
+    logoUrl: text('logo_url'),
+  },
+  (table) => {
+    return {
+      transactionsAccountIdFkey: foreignKey({
+        columns: [table.accountId],
+        foreignColumns: [accounts.id],
+        name: 'transactions_account_id_fkey',
+      })
+        .onUpdate('cascade')
+        .onDelete('cascade'),
+      transactionsUserIdFkey: foreignKey({
+        columns: [table.userId],
+        foreignColumns: [users.id],
+        name: 'transactions_user_id_fkey',
+      })
+        .onUpdate('cascade')
+        .onDelete('cascade'),
+    };
+  },
+);
+
 export const categories = pgTable(
   'categories',
   {
     id: uuid('id').defaultRandom().primaryKey().notNull(),
     userId: text('user_id').notNull(),
-    category: budgetCategory('category').notNull(),
+    category: text('category').notNull(),
     limit: doublePrecision('limit')
       .default(sql`'0'`)
       .notNull(),
@@ -119,6 +161,8 @@ export const accounts = pgTable(
     updatedAt: timestamp('updated_at', { mode: 'string' })
       .defaultNow()
       .notNull(),
+    type: text('type').notNull(),
+    mask: text('mask').notNull(),
   },
   (table) => {
     return {
@@ -126,45 +170,6 @@ export const accounts = pgTable(
         columns: [table.userId],
         foreignColumns: [users.id],
         name: 'accounts_user_id_fkey',
-      })
-        .onUpdate('cascade')
-        .onDelete('cascade'),
-    };
-  },
-);
-
-export const transactions = pgTable(
-  'transactions',
-  {
-    id: text('id').primaryKey().notNull(),
-    accountId: text('account_id').notNull(),
-    name: varchar('name').notNull(),
-    date: text('date').notNull(),
-    amount: doublePrecision('amount').notNull(),
-    createdAt: timestamp('created_at', { mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    updatedAt: timestamp('updated_at', { mode: 'string' })
-      .defaultNow()
-      .notNull(),
-    userId: text('user_id').notNull(),
-    reviewed: boolean('reviewed').default(false).notNull(),
-    category: budgetCategory('category').default('OTHER').notNull(),
-    detailedCategory: text('detailed_category').default('OTHER').notNull(),
-  },
-  (table) => {
-    return {
-      transactionsAccountIdFkey: foreignKey({
-        columns: [table.accountId],
-        foreignColumns: [accounts.id],
-        name: 'transactions_account_id_fkey',
-      })
-        .onUpdate('cascade')
-        .onDelete('cascade'),
-      transactionsUserIdFkey: foreignKey({
-        columns: [table.userId],
-        foreignColumns: [users.id],
-        name: 'transactions_user_id_fkey',
       })
         .onUpdate('cascade')
         .onDelete('cascade'),
@@ -212,6 +217,16 @@ export const users = pgTable('users', {
     .notNull(),
   firstTime: boolean('first_time').default(true),
   pushToken: text('push_token'),
+  streak: smallint('streak')
+    .default(sql`'0'`)
+    .notNull(),
+  nextStreakAt: timestamp('next_streak_at', {
+    withTimezone: true,
+    mode: 'string',
+  }).defaultNow(),
+  tutorialStep: smallint('tutorial_step')
+    .default(sql`'1'`)
+    .notNull(),
 });
 
 // Export types for insertion and selection
