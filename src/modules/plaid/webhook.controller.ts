@@ -130,6 +130,7 @@ export class PlaidWebhookController {
 
       for (const keyID of keyIDsToUpdate) {
         try {
+          console.log('Fetching key:', keyID);
           const response = await this.plaidClient.webhookVerificationKeyGet({
             key_id: keyID,
           });
