@@ -1,4 +1,4 @@
-import { pgTable, foreignKey, text, timestamp, unique, uuid, doublePrecision, varchar, boolean, pgEnum } from "drizzle-orm/pg-core"
+import { pgTable, foreignKey, text, timestamp, varchar, doublePrecision, boolean, unique, uuid, smallint, pgEnum } from "drizzle-orm/pg-core"
   import { sql } from "drizzle-orm"
 
 export const alertType = pgEnum("alert_type", ['uncategorizedTransaction', 'overBudget', 'almostOverBudget', 'accountNeedsAction'])
@@ -22,6 +22,36 @@ export const items = pgTable("items", {
 			columns: [table.userId],
 			foreignColumns: [users.id],
 			name: "items_user_id_fkey"
+		}).onUpdate("cascade").onDelete("cascade"),
+	}
+});
+
+export const transactions = pgTable("transactions", {
+	id: text("id").primaryKey().notNull(),
+	accountId: text("account_id").notNull(),
+	name: varchar("name").notNull(),
+	date: text("date").notNull(),
+	amount: doublePrecision("amount").notNull(),
+	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
+	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
+	userId: text("user_id").default(requesting_user_id()).notNull(),
+	reviewed: boolean("reviewed").default(false).notNull(),
+	category: text("category").notNull(),
+	detailedCategory: text("detailed_category").default('OTHER').notNull(),
+	pending: boolean("pending").default(false).notNull(),
+	logoUrl: text("logo_url"),
+},
+(table) => {
+	return {
+		transactionsAccountIdFkey: foreignKey({
+			columns: [table.accountId],
+			foreignColumns: [accounts.id],
+			name: "transactions_account_id_fkey"
+		}).onUpdate("cascade").onDelete("cascade"),
+		transactionsUserIdFkey: foreignKey({
+			columns: [table.userId],
+			foreignColumns: [users.id],
+			name: "transactions_user_id_fkey"
 		}).onUpdate("cascade").onDelete("cascade"),
 	}
 });
@@ -55,6 +85,8 @@ export const accounts = pgTable("accounts", {
 	balance: doublePrecision("balance").notNull(),
 	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
 	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
+	type: text("type").default('').notNull(),
+	mask: text("mask").default('').notNull(),
 },
 (table) => {
 	return {
@@ -62,34 +94,6 @@ export const accounts = pgTable("accounts", {
 			columns: [table.userId],
 			foreignColumns: [users.id],
 			name: "accounts_user_id_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
-	}
-});
-
-export const transactions = pgTable("transactions", {
-	id: text("id").primaryKey().notNull(),
-	accountId: text("account_id").notNull(),
-	name: varchar("name").notNull(),
-	date: text("date").notNull(),
-	amount: doublePrecision("amount").notNull(),
-	createdAt: timestamp("created_at", { mode: 'string' }).defaultNow().notNull(),
-	updatedAt: timestamp("updated_at", { mode: 'string' }).defaultNow().notNull(),
-	userId: text("user_id").default(requesting_user_id()).notNull(),
-	reviewed: boolean("reviewed").default(false).notNull(),
-	category: budgetCategory("category").default('OTHER').notNull(),
-	detailedCategory: text("detailed_category").default('OTHER').notNull(),
-},
-(table) => {
-	return {
-		transactionsAccountIdFkey: foreignKey({
-			columns: [table.accountId],
-			foreignColumns: [accounts.id],
-			name: "transactions_account_id_fkey"
-		}).onUpdate("cascade").onDelete("cascade"),
-		transactionsUserIdFkey: foreignKey({
-			columns: [table.userId],
-			foreignColumns: [users.id],
-			name: "transactions_user_id_fkey"
 		}).onUpdate("cascade").onDelete("cascade"),
 	}
 });
@@ -123,4 +127,7 @@ export const users = pgTable("users", {
 	updatedAt: timestamp("updated_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
 	firstTime: boolean("first_time").default(true),
 	pushToken: text("push_token"),
+	streak: smallint("streak").default(sql`'0'`).notNull(),
+	nextStreakAt: timestamp("next_streak_at", { withTimezone: true, mode: 'string' }).defaultNow(),
+	tutorialStep: smallint("tutorial_step").default(sql`'1'`).notNull(),
 });

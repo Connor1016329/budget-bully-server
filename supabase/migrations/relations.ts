@@ -1,5 +1,5 @@
 import { relations } from "drizzle-orm/relations";
-import { users, items, categories, accounts, transactions, alerts } from "./schema";
+import { users, items, accounts, transactions, categories, alerts } from "./schema";
 
 export const itemsRelations = relations(items, ({one}) => ({
 	user: one(users, {
@@ -10,25 +10,10 @@ export const itemsRelations = relations(items, ({one}) => ({
 
 export const usersRelations = relations(users, ({many}) => ({
 	items: many(items),
+	transactions: many(transactions),
 	categories: many(categories),
 	accounts: many(accounts),
-	transactions: many(transactions),
 	alerts: many(alerts),
-}));
-
-export const categoriesRelations = relations(categories, ({one}) => ({
-	user: one(users, {
-		fields: [categories.userId],
-		references: [users.id]
-	}),
-}));
-
-export const accountsRelations = relations(accounts, ({one, many}) => ({
-	user: one(users, {
-		fields: [accounts.userId],
-		references: [users.id]
-	}),
-	transactions: many(transactions),
 }));
 
 export const transactionsRelations = relations(transactions, ({one}) => ({
@@ -38,6 +23,21 @@ export const transactionsRelations = relations(transactions, ({one}) => ({
 	}),
 	user: one(users, {
 		fields: [transactions.userId],
+		references: [users.id]
+	}),
+}));
+
+export const accountsRelations = relations(accounts, ({one, many}) => ({
+	transactions: many(transactions),
+	user: one(users, {
+		fields: [accounts.userId],
+		references: [users.id]
+	}),
+}));
+
+export const categoriesRelations = relations(categories, ({one}) => ({
+	user: one(users, {
+		fields: [categories.userId],
 		references: [users.id]
 	}),
 }));
