@@ -205,6 +205,7 @@ export class PlaidService {
         name: account.name,
         balance: account.balances.available ?? account.balances.current,
         updatedAt: new Date().toISOString(),
+        createdAt: new Date().toISOString(), // Add this line
         mask: account.mask,
         type: account.type,
       }));
