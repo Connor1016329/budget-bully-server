@@ -19,6 +19,26 @@ export const alertType = pgEnum('alert_type', [
   'almostOverBudget',
   'accountNeedsAction',
 ]);
+export const budgetCategories = pgEnum('budget_categories', [
+  'BANK_FEES',
+  'LOAN_PAYMENTS',
+  'RENT_AND_UTILITIES',
+  'INSURANCE',
+  'INCOME',
+  'SAVINGS',
+  'SUBSCRIPTIONS',
+  'GENERAL_SERVICES',
+  'GENERAL_MERCHANDISE',
+  'GROCERIES',
+  'EATING_OUT',
+  'ENTERTAINMENT',
+  'PERSONAL_CARE',
+  'TRANSPORTATION',
+  'TRAVEL',
+  'TRANSFER_IN',
+  'TRANSFER_OUT',
+  'OTHER',
+]);
 export const budgetCategory = pgEnum('budget_category', [
   'BANK_FEES',
   'ENTERTAINMENT',
@@ -161,8 +181,8 @@ export const accounts = pgTable(
     updatedAt: timestamp('updated_at', { mode: 'string' })
       .defaultNow()
       .notNull(),
-    type: text('type').notNull(),
-    mask: text('mask').notNull(),
+    type: text('type').default('').notNull(),
+    mask: text('mask').default('').notNull(),
   },
   (table) => {
     return {
@@ -224,9 +244,6 @@ export const users = pgTable('users', {
     withTimezone: true,
     mode: 'string',
   }).defaultNow(),
-  tutorialStep: smallint('tutorial_step')
-    .default(sql`'1'`)
-    .notNull(),
 });
 
 // Export types for insertion and selection

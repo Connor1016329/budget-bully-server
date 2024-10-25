@@ -2,6 +2,7 @@ import { pgTable, foreignKey, text, timestamp, varchar, doublePrecision, boolean
   import { sql } from "drizzle-orm"
 
 export const alertType = pgEnum("alert_type", ['uncategorizedTransaction', 'overBudget', 'almostOverBudget', 'accountNeedsAction'])
+export const budgetCategories = pgEnum("budget_categories", ['BANK_FEES', 'LOAN_PAYMENTS', 'RENT_AND_UTILITIES', 'INSURANCE', 'INCOME', 'SAVINGS', 'SUBSCRIPTIONS', 'GENERAL_SERVICES', 'GENERAL_MERCHANDISE', 'GROCERIES', 'EATING_OUT', 'ENTERTAINMENT', 'PERSONAL_CARE', 'TRANSPORTATION', 'TRAVEL', 'TRANSFER_IN', 'TRANSFER_OUT', 'OTHER'])
 export const budgetCategory = pgEnum("budget_category", ['BANK_FEES', 'ENTERTAINMENT', 'FOOD_AND_DRINK', 'GENERAL_MERCHANDISE', 'GENERAL_SERVICES', 'GOVERNMENT_AND_NON_PROFIT', 'HOME_IMPROVEMENT', 'INCOME', 'LOAN_PAYMENTS', 'MEDICAL', 'PERSONAL_CARE', 'RENT_AND_UTILITIES', 'TRANSFER_IN', 'TRANSFER_OUT', 'TRANSPORTATION', 'TRAVEL', 'OTHER'])
 export const categoryStatus = pgEnum("category_status", ['GOOD', 'ALMOST_OVER', 'OVER'])
 
@@ -59,7 +60,7 @@ export const transactions = pgTable("transactions", {
 export const categories = pgTable("categories", {
 	id: uuid("id").defaultRandom().primaryKey().notNull(),
 	userId: text("user_id").default(requesting_user_id()).notNull(),
-	category: budgetCategory("category").notNull(),
+	category: text("category").notNull(),
 	limit: doublePrecision("limit").default(sql`'0'`).notNull(),
 	total: doublePrecision("total").default(sql`'0'`).notNull(),
 	createdAt: timestamp("created_at", { withTimezone: true, mode: 'string' }).defaultNow().notNull(),
@@ -129,5 +130,4 @@ export const users = pgTable("users", {
 	pushToken: text("push_token"),
 	streak: smallint("streak").default(sql`'0'`).notNull(),
 	nextStreakAt: timestamp("next_streak_at", { withTimezone: true, mode: 'string' }).defaultNow(),
-	tutorialStep: smallint("tutorial_step").default(sql`'1'`).notNull(),
 });
