@@ -6,6 +6,7 @@ import {
   InsertTransaction,
   InsertUser,
   items,
+  SelectAccount,
   SelectItem,
   SelectTransaction,
   SelectUser,
@@ -265,7 +266,7 @@ export class DatabaseService {
   async setSuggestedLimits(
     userId: string,
     transactions: InsertTransaction[],
-    accounts: InsertAccount[],
+    accounts: SelectAccount[],
   ) {
     // Calculate the average income of the last 5 months
     const calculateMonthlyIncome = () => {
