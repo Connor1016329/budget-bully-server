@@ -206,9 +206,11 @@ export class PlaidService {
         balance: account.balances.available ?? account.balances.current,
         updatedAt: new Date().toISOString(),
         createdAt: new Date().toISOString(), // Add this line
-        mask: account.mask,
+        mask: account.mask || 'xxxx',
         type: account.type,
       }));
+
+      await this.databaseService.updateCreateOrDeleteAccounts(accounts);
 
       const transactionData = added.concat(modified);
 
@@ -309,8 +311,6 @@ export class PlaidService {
           transactionYearMonth === lastMonthYearMonth
         );
       });
-
-      await this.databaseService.updateCreateOrDeleteAccounts(accounts);
 
       await Promise.all([
         ...transactions.map((transaction) =>
