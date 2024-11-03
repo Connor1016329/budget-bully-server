@@ -284,7 +284,7 @@ export class PlaidService {
       const userTransactions =
         await this.databaseService.getTransactionsByUserId(userId);
 
-      if (userTransactions.length > 0) {
+      if (userTransactions.length === 0) {
         await this.databaseService.setSuggestedLimits(
           userId,
           transactions,
