@@ -73,6 +73,7 @@ export class ClerkController {
       };
 
       try {
+        console.log('Creating user: ', userPayload);
         // Call createUser from ClerkService
         const newUser = await this.clerkService.createUser(userPayload);
         // Return success response
@@ -92,7 +93,7 @@ export class ClerkController {
 
     if (evt.type === 'user.updated') {
       const userData = evt.data;
-
+      console.log('Updating user: ', userData);
       // Prepare data for the ClerkService
       const userPayload = {
         id: userData.id,
@@ -122,7 +123,7 @@ export class ClerkController {
 
     if (evt.type === 'user.deleted') {
       const userData = evt.data;
-
+      console.log('Deleting user: ', userData);
       try {
         // Call createUser from ClerkService
         await this.clerkService.deleteUser(userData.id);

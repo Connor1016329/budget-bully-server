@@ -48,6 +48,7 @@ export class PlaidWebhookController {
     });
 
     if (!isValid) {
+      console.error('Invalid webhook signature');
       return res.status(400).json({
         success: false,
         message: 'Invalid webhook signature',
@@ -69,6 +70,7 @@ export class PlaidWebhookController {
               await this.databaseService.getAccessTokenByUserId(userId);
 
             if (!accessToken) {
+              console.log('Exchanging public token for link token: ', payload.link_token);
               await this.plaidService.exchangePublicToken(
                 payload.link_token,
                 payload.public_tokens[0],
@@ -84,6 +86,7 @@ export class PlaidWebhookController {
       case 'TRANSACTIONS':
         if (code === 'SYNC_UPDATES_AVAILABLE') {
           try {
+            console.log('Updating transactions for item: ', payload.item_id);
             await this.plaidService.updateTransactions(payload.item_id);
           } catch (error) {
             console.error('Error updating transactions:', error);
@@ -93,7 +96,7 @@ export class PlaidWebhookController {
         break;
 
       default:
-        console.log('Unhandled Webhook');
+        console.log('Unhandled Webhook. Type: ', type, 'Code: ', code);
         break;
     }
 
