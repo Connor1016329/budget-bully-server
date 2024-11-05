@@ -12,12 +12,12 @@ export class TestsController {
   async sendNotification(
     @Body('token') token: string,
     @Body('transactions')
-    @Body('password') password: string,
     transactions: {
       category: any;
       detailedCategory: any;
       name: string;
     }[],
+    @Body('password') password: string,
     @Body('user_id') user_id: string,
   ) {
     if (password === 'Cln1758!!') {
@@ -40,9 +40,9 @@ export class TestsController {
   ) {
     if (password === 'Cln1758!!') {
       try {
-      await this.plaidService.updateWebhook(access_token, webhook);
-      return 'Webhook updated';
-    } catch (error) {
+        await this.plaidService.updateWebhook(access_token, webhook);
+        return 'Webhook updated';
+      } catch (error) {
         return error;
       }
     } else {
@@ -51,14 +51,17 @@ export class TestsController {
   }
 
   @Post('update-item')
-  async updateItem(@Body('item_id') item_id: string, @Body('password') password: string) {
+  async updateItem(
+    @Body('item_id') item_id: string,
+    @Body('password') password: string,
+  ) {
     if (password === 'Cln1758!!') {
       try {
         await this.plaidService.updateTransactions(item_id);
-      return 'Item updated';
-    } catch (error) {
-      console.error('Error updating transactions:', error);
-      return error;
+        return 'Item updated';
+      } catch (error) {
+        console.error('Error updating transactions:', error);
+        return error;
       }
     } else {
       return 'Invalid password';

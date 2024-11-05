@@ -290,27 +290,29 @@ export class PlaidService {
           transactions,
           accounts,
         );
+
+        // remove transactions that are longer than 2 months old
+        transactions = transactions.filter((transaction) => {
+          const transactionYearMonth = transaction.date.substring(0, 7);
+
+          const currentDate = new Date();
+          const currentYearMonth = currentDate.toISOString().substring(0, 7);
+
+          const lastMonthDate = new Date(
+            currentDate.getFullYear(),
+            currentDate.getMonth() - 1,
+            1,
+          );
+          const lastMonthYearMonth = lastMonthDate
+            .toISOString()
+            .substring(0, 7);
+
+          return (
+            transactionYearMonth === currentYearMonth ||
+            transactionYearMonth === lastMonthYearMonth
+          );
+        });
       }
-
-      // remove transactions that are longer than 2 months old
-      transactions = transactions.filter((transaction) => {
-        const transactionYearMonth = transaction.date.substring(0, 7);
-
-        const currentDate = new Date();
-        const currentYearMonth = currentDate.toISOString().substring(0, 7);
-
-        const lastMonthDate = new Date(
-          currentDate.getFullYear(),
-          currentDate.getMonth() - 1,
-          1,
-        );
-        const lastMonthYearMonth = lastMonthDate.toISOString().substring(0, 7);
-
-        return (
-          transactionYearMonth === currentYearMonth ||
-          transactionYearMonth === lastMonthYearMonth
-        );
-      });
 
       await Promise.all([
         ...transactions.map((transaction) =>
@@ -340,17 +342,16 @@ export class PlaidService {
 
       // if there are unreviewed transactions, get the users push_token and call fireNotification
       if (unreviewedTransactions.length > 0) {
-        await this.databaseService
-          .getUserPushTokenByPlaidItemId(plaidItemId)
-          .then((pushToken) => {
-            if (pushToken) {
-              this.expoService.sendUnreviewedTransactionsNotification(
-                pushToken,
-                unreviewedTransactions,
-                userId,
-              );
-            }
-          });
+        const pushToken =
+          await this.databaseService.getUserPushTokenByPlaidItemId(plaidItemId);
+
+        if (pushToken) {
+          this.expoService.sendUnreviewedTransactionsNotification(
+            pushToken,
+            unreviewedTransactions,
+            userId,
+          );
+        }
       }
     } catch (error) {
       console.error(`Failed to update transactions: ${error.message}`);

@@ -70,7 +70,10 @@ export class PlaidWebhookController {
               await this.databaseService.getAccessTokenByUserId(userId);
 
             if (!accessToken) {
-              console.log('Exchanging public token for link token: ', payload.link_token);
+              console.log(
+                'Exchanging public token for link token: ',
+                payload.link_token,
+              );
               await this.plaidService.exchangePublicToken(
                 payload.link_token,
                 payload.public_tokens[0],
