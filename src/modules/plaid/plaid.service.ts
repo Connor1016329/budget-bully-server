@@ -339,6 +339,7 @@ export class PlaidService {
             name: transaction.name.toString(),
           };
         });
+      console.log('unreviewedTransactions', unreviewedTransactions.length);
 
       // if there are unreviewed transactions, get the users push_token and call fireNotification
       if (unreviewedTransactions.length > 0) {
@@ -346,11 +347,14 @@ export class PlaidService {
           await this.databaseService.getUserPushTokenByPlaidItemId(plaidItemId);
 
         if (pushToken) {
+          console.log('sending unreviewed transactions notification');
           this.expoService.sendUnreviewedTransactionsNotification(
             pushToken,
             unreviewedTransactions,
             userId,
           );
+        } else {
+          console.log('no push token found');
         }
       }
     } catch (error) {
