@@ -344,7 +344,7 @@ export class PlaidService {
       // if there are unreviewed transactions, get the users push_token and call fireNotification
       if (unreviewedTransactions.length > 0) {
         const pushToken =
-          await this.databaseService.getUserPushTokenByPlaidItemId(plaidItemId);
+          await this.databaseService.getUserPushTokenByUserID(userId);
 
         if (pushToken) {
           console.log('sending unreviewed transactions notification');

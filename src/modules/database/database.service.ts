@@ -76,19 +76,17 @@ export class DatabaseService {
     }
   }
 
-  async getUserPushTokenByPlaidItemId(
-    plaidItemId: string,
-  ): Promise<string | null> {
+  async getUserPushTokenByUserID(userId: string): Promise<string | null> {
     try {
       const result = await this.databaseClient
         .select()
-        .from(items)
-        .where(eq(items.id, plaidItemId))
+        .from(users)
+        .where(eq(users.id, userId))
         .limit(1);
       return result.length > 0 ? result[0].pushToken : null;
     } catch (error) {
       throw new Error(
-        `Failed to get user push token by Plaid item ID: ${error.message}`,
+        `Failed to get user push token by user ID: ${error.message}`,
       );
     }
   }
