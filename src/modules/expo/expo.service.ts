@@ -156,7 +156,7 @@ export class ExpoService {
           );
         if (status !== 'GOOD') {
           flag = true;
-          message.title = 'General Merchandise';
+          message.title = 'Shopping';
           message.subtitle = 'Unreviewed transactions';
           if (
             transactions.some((transaction) =>
@@ -180,7 +180,7 @@ export class ExpoService {
       }
       if (
         transactions.some(
-          (transaction) => transaction.category === 'FOOD_AND_DRINK',
+          (transaction) => transaction.category === 'EATING_OUT',
         ) &&
         !flag
       ) {
@@ -188,11 +188,11 @@ export class ExpoService {
         const status =
           await this.databaseService.getCategoryStatusByUserIdAndCategory(
             userId,
-            'FOOD_AND_DRINK',
+            'EATING_OUT',
           );
         if (status !== 'GOOD') {
           flag = true;
-          message.title = 'Food and Drink';
+          message.title = 'Eating Out';
           message.subtitle = 'Unreviewed transactions';
           if (
             transactions.some((transaction) =>

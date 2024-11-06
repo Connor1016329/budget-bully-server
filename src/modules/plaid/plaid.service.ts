@@ -257,7 +257,7 @@ export class PlaidService {
             category = 'BANK_FEES';
             break;
           case 'HOME_IMPROVEMENT':
-            category = 'SHOPPING';
+            category = 'GENERAL_MERCHANDISE';
             break;
           case 'MEDICAL':
             category = 'OTHER';
