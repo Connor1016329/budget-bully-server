@@ -120,6 +120,20 @@ export class DatabaseService {
     }
   }
 
+  async getPlaidItemIdByUserId(userId: string): Promise<string | null> {
+    try {
+      const result = await this.databaseClient
+        .select({ id: items.id })
+        .from(items)
+        .where(eq(items.userId, userId));
+      return result.length > 0 ? result[0].id : null;
+    } catch (error) {
+      throw new Error(
+        `Failed to get Plaid item ID by user ID: ${error.message}`,
+      );
+    }
+  }
+
   async retrieveItemByPlaidItemId(itemId: string): Promise<SelectItem | null> {
     try {
       const result = await this.databaseClient

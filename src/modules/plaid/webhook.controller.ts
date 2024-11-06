@@ -78,6 +78,10 @@ export class PlaidWebhookController {
                 payload.link_token,
                 payload.public_tokens[0],
               );
+            } else {
+              const item_id =
+                await this.databaseService.getPlaidItemIdByUserId(userId);
+              await this.plaidService.updateTransactions(item_id);
             }
           } catch (error) {
             console.error('Error exchanging public token:', error);
