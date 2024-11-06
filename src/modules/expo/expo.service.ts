@@ -207,10 +207,10 @@ export class ExpoService {
             )
           ) {
             message.body =
-              'Another meal out? Sure, why cook at home when you can eat like a king and budget like a court jester.';
+              "You spent how much at McDonald's? If your savings account had as much grease as those fries, maybe it wouldn’t be so slippery.";
           } else {
             message.body =
-              "You spent how much at McDonald's? If your savings account had as much grease as those fries, maybe it wouldn’t be so slippery.";
+              'Another meal out? Sure, why cook at home when you can eat like a king and budget like a court jester.';
           }
         }
       }
