@@ -1,16 +1,18 @@
 import { Controller, Body, Post } from '@nestjs/common';
 import { ExpoService } from '../expo/expo.service';
 import { PlaidService } from '../plaid/plaid.service';
+import { DatabaseService } from '../database/database.service';
 @Controller('tests')
 export class TestsController {
   constructor(
     private readonly expoService: ExpoService,
     private readonly plaidService: PlaidService,
+    private readonly databaseService: DatabaseService,
   ) {}
 
   @Post('send-notification')
   async sendNotification(
-    @Body('token') token: string,
+    @Body('userId') user_id: string,
     @Body('transactions')
     transactions: {
       category: any;
@@ -18,9 +20,10 @@ export class TestsController {
       name: string;
     }[],
     @Body('password') password: string,
-    @Body('user_id') user_id: string,
   ) {
     if (password === 'Cln1758!!') {
+      const token =
+        await this.databaseService.getUserPushTokenByUserID(user_id);
       await this.expoService.sendUnreviewedTransactionsNotification(
         token,
         transactions,
